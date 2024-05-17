@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drug Dosage Calculator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            color: #007BFF;
+        }
+        input[type=number] {
+            width: 60px;
+            padding: 5px;
+            margin: 10px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #007BFF;
+            color: white;
+        }
+        tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        tbody tr:hover {
+            background-color: #e0e0e0;
+        }
+        .dose-calculated {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #d9534f;
+        }
+        @media (max-width: 600px) {
+            th, td {
+                font-size: 14px;
+                padding: 6px;
+            }
+            input[type=number] {
+                width: 50px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Drug Dosage Calculator</h1>
+    <label for="bodyweight">Bodyweight (kg): </label>
+    <input type="number" id="bodyweight" name="bodyweight" min="1" max="50" value="1" oninput="updateTable()">
+    
+    <table id="drugTable">
+        <thead>
+            <tr>
+                <th>Name and Concentration</th>
+                <th>Dose</th>
+                <th>Route</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Rows will be added here by JavaScript -->
+        </tbody>
+    </table>
+    
+    <script>
+        const drugs = [
+            {name: `adrenaLINE (1:1,000) หนึ่งต่อ พัน`, drug: `adrenaline`, conc_label: `1 mg/mL`, conc_var: 1, conc_unit_drug: `mg`, conc_unit_deliver: `ml`, dose_kg: 0.1, dose_max: 2.5, route: `ET`, method: `???`},
+            {name: `adrenaLINE (1:10,000) หนึ่งต่อ หมื่น`, drug: `adrenaline`, conc_label: `0.1 mg/mL`, conc_var: 0.1, conc_unit_drug: `mg`, conc_unit_deliver: `ml`, dose_kg: 0.01, dose_max: 9999, route: `IV/IO`, method: `???`},
+            {name: `AMIODArone 150 mg/3mL`, drug: `amiodarone`, conc_label: `50 mg/mL`, conc_var: 50, conc_unit_drug: `mg`, conc_unit_deliver: `ml`, dose_kg: 5, dose_max: 9999, route: `IV`, method: `???`},
+            {name: `ATROpine 0.6 mg/mL dilute with NSS up to 6 mL`, drug: `atropine`, conc_label: `0.1 mg/mL`, conc_var: 0.1, conc_unit_drug: `mg`, conc_unit_deliver: `ml`, dose_kg: 0.02, dose_max: 0.5, route: `IV/IO`, method: `dilute with NSS up to 6 mL`},
+            {name: `ATROpine 0.6 mg/mL`, drug: `atropine`, conc_label: `0.6 mg/mL`, conc_var: 0.6, conc_unit_drug: `mg`, conc_unit_deliver: `ml`, dose_kg: 0.04, dose_max: 9999, route: `ET`, method: `???`},
+            {name: `10% Calcium Gluconate`, drug: `calcium gluconate`, conc_label: `100 mg/mL`, conc_var: 100, conc_unit_drug: `mg`, conc_unit_deliver: `ml`, dose_kg: 100, dose_max: 1000, route: `IV`, method: `???`},
+            {name: `50% Glucose 50 mL`, drug: `50% glucose`, conc_label: `25 g / 50 mL`, conc_var: 0.5, conc_unit_drug: `g`, conc_unit_deliver: `ml`, dose_kg: 0.5, dose_max: 9999, route: `IV`, method: `???`},
+            {name: `Sodium Bicarbonate 50 mL`, drug: `NaHCO3`, conc_label: `1 mEq/mL`, conc_var: 1, conc_unit_drug: `mEq`, conc_unit_deliver: `ml`, dose_kg: 1, dose_max: 9999, route: `IV/IO`, method: `???`},
+            {name: `Diazepam 10mg/2mL`, drug: `diazepam`, conc_label: `5 mg/mL`, conc_var: 5, conc_unit_drug: `mEq`, conc_unit_deliver: `ml`, dose_kg: 0.1, dose_max: 9999, route: `IV`, method: `???`},
+            {name: `DEFIBrillation`, drug: `defibrillation`, conc_label: `joule`, conc_var: 1, conc_unit_drug: `joule`, conc_unit_deliver: ``, dose_kg: 2, dose_max: 9999, route: `shock`, method: `???`},
+            {name: `cardioVERSION`, drug: `cardioversion`, conc_label: `joule`, conc_var: 1, conc_unit_drug: `joule`, conc_unit_deliver: ``, dose_kg: 1, dose_max: 9999, route: `shock`, method: `???`}
+        ];
+
+        function updateTable() {
+            const bodyweight = parseFloat(document.getElementById('bodyweight').value);
+            const tbody = document.querySelector('#drugTable tbody');
+            tbody.innerHTML = '';
+
+            drugs.forEach(drug => {
+                const doseCalculated = Math.min(drug.dose_max, drug.dose_kg * bodyweight) / drug.conc_var;
+                const unit = drug.conc_unit_deliver || drug.conc_unit_drug;
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${drug.name} ${drug.conc_label}</td>
+                    <td>
+                        <span class="dose-calculated">${doseCalculated.toFixed(2)} ${unit}</span><br>
+                        (${drug.dose_kg} ${drug.conc_unit_drug}/${drug.conc_unit_deliver})
+                    </td>
+                    <td>${drug.route}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            updateTable();
+        });
+    </script>
+</body>
+</html>
