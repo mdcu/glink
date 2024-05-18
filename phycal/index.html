@@ -20,6 +20,24 @@
             padding: 5px;
             margin: 10px 0;
         }
+        .filter-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .filter-controls button {
+            padding: 10px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        .filter-controls button.active {
+            background-color: #d9534f;
+        }
         table {
             width: 100%;
             border-collapse: collapse;
@@ -47,7 +65,21 @@
             font-weight: bold;
             color: #d9534f;
         }
+        .dose-drug-unit {
+            font-weight: bold;
+            background-color: #e0f7ff;
+            padding: 2px 4px;
+            display: inline-block;
+            margin: 2px 0;
+        }
+        .dose-details {
+            display: inline-block;
+            margin: 2px 0;
+        }
         @media (max-width: 600px) {
+            th:nth-child(1), td:nth-child(1) {
+                width: 40%;
+            }
             th, td {
                 font-size: 14px;
                 padding: 6px;
@@ -60,6 +92,9 @@
 </head>
 <body>
     <h1>Drug Dosage Calculator</h1>
+    <div class="filter-controls" id="filterControls">
+        <!-- Buttons will be added here by JavaScript -->
+    </div>
     <label for="bodyweight">Bodyweight (kg): </label>
     <input type="number" id="bodyweight" name="bodyweight" min="1" max="50" value="1" oninput="validateInput()" onclick="this.select()">
     
@@ -105,26 +140,51 @@
 
         function updateTable() {
             const bodyweight = parseFloat(document.getElementById('bodyweight').value);
+            const activeFilters = Array.from(document.querySelectorAll('.filter-controls button.active')).map(btn => btn.dataset.drug);
             const tbody = document.querySelector('#drugTable tbody');
             tbody.innerHTML = '';
 
             drugs.forEach(drug => {
                 const doseCalculated = Math.min(drug.dose_max, drug.dose_kg * bodyweight) / drug.conc_var;
+                const doseDrugUnit = Math.min(drug.dose_max, drug.dose_kg * bodyweight);
                 const unit = drug.conc_unit_deliver || drug.conc_unit_drug;
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${drug.name} ${drug.conc_label}</td>
-                    <td>
-                        <span class="dose-calculated">${doseCalculated.toFixed(2)} ${unit}</span><br>
-                        (${drug.dose_kg} ${drug.conc_unit_drug}/${drug.conc_unit_deliver})
-                    </td>
-                    <td>${drug.route}</td>
-                `;
-                tbody.appendChild(row);
+
+                if (activeFilters.length === 0 || activeFilters.includes(drug.drug)) {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${drug.name}; (${drug.conc_label})</td>
+                        <td>
+                            <span class="dose-calculated">${doseCalculated.toFixed(2)} ${unit}</span><br>
+                            <span class="dose-drug-unit">${doseDrugUnit.toFixed(2)} ${drug.conc_unit_drug}</span><br>
+                            <span class="dose-details">(${drug.dose_kg} ${drug.conc_unit_drug}/kg)</span>
+                        </td>
+                        <td>${drug.route}</td>
+                    `;
+                    tbody.appendChild(row);
+                }
+            });
+        }
+
+        function toggleFilter(btn) {
+            btn.classList.toggle('active');
+            updateTable();
+        }
+
+        function createFilterButtons() {
+            const filterControls = document.getElementById('filterControls');
+            const drugNames = [...new Set(drugs.map(drug => drug.drug))];
+            
+            drugNames.forEach(drug => {
+                const button = document.createElement('button');
+                button.innerText = drug;
+                button.dataset.drug = drug;
+                button.onclick = () => toggleFilter(button);
+                filterControls.appendChild(button);
             });
         }
 
         document.addEventListener('DOMContentLoaded', () => {
+            createFilterButtons();
             updateTable();
         });
     </script>
