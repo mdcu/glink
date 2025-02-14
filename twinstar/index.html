@@ -11,17 +11,42 @@
       position: absolute;
       top: 10px;
       left: 10px;
-      background: rgba(255, 255, 255, 0.8);
-      padding: 10px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    #gravitySlider {
+      appearance: none;
+      width: 100px;
+      height: 5px;
+      background: #ccc;
       border-radius: 5px;
+      outline: none;
+    }
+    button {
+      padding: 5px 10px;
+      border: none;
+      border-radius: 50%;
+      background: #007bff;
+      color: white;
+      cursor: pointer;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
+      height: 30px;
+    }
+    button:hover {
+      background: #0056b3;
     }
   </style>
 </head>
 <body>
   <div id="controls">
-    <label for="gravitySlider">Gravity (G): </label>
     <input type="range" id="gravitySlider" min="5" max="15" step="0.1" value="10">
-    <span id="gravityValue">10</span>
+    <button id="forceRefresh">🔄</button>
+    <button id="dropNewPair">➕</button>
   </div>
   <canvas id="gravityCanvas"></canvas>
   <script>
@@ -36,19 +61,17 @@
     const STAR_SPEED = 0.2;
     
     const gravitySlider = document.getElementById('gravitySlider');
-    const gravityValue = document.getElementById('gravityValue');
     let G = parseFloat(gravitySlider.value);
 
     gravitySlider.addEventListener('input', () => {
       G = parseFloat(gravitySlider.value);
-      gravityValue.textContent = G.toFixed(1);
     });
 
     let isCollision = false;
     let mass1, mass2;
     let stars = Array.from({ length: STARS_COUNT }, () => ({
-      x: Math.random() * canvas.width * 0.8 + canvas.width * 0.1,
-      y: Math.random() * canvas.height * 0.8 + canvas.height * 0.1,
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
       brightness: Math.floor(Math.random() * 155) + 100
     }));
     let trails = [];
@@ -91,6 +114,7 @@
           ctx.stroke();
         }
 
+        ctx.globalAlpha = 1;
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
         ctx.fillStyle = this.color;
@@ -134,18 +158,27 @@
       );
     }
 
-    function resetSimulation() {
+    function resetSimulation(clearTrail = false) {
+      if (clearTrail) trails = [];
       mass1 = createRandomMass('gold');
       mass2 = createRandomMass('lightSkyBlue');
       isCollision = false;
     }
+
+    document.getElementById('forceRefresh').addEventListener('click', () => {
+      resetSimulation(true);
+    });
+
+    document.getElementById('dropNewPair').addEventListener('click', () => {
+      resetSimulation(false);
+    });
 
     resetSimulation();
     
     function animate() {
       if (!isCollision) {
         if (mass1.isOutOfCanvas() && mass2.isOutOfCanvas()) {
-          resetSimulation();
+          resetSimulation(false);
         }
 
         drawBackground();
