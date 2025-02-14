@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gravity Simulation</title>
+  <style>
+    body { margin: 0; overflow: hidden; }
+    canvas { display: block; }
+    #controls {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(255, 255, 255, 0.8);
+      padding: 10px;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div id="controls">
+    <label for="gravitySlider">Gravity (G): </label>
+    <input type="range" id="gravitySlider" min="5" max="15" step="0.1" value="10">
+    <span id="gravityValue">10</span>
+  </div>
+  <canvas id="gravityCanvas"></canvas>
+  <script>
+    const canvas = document.getElementById('gravityCanvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const COLLISION_DISTANCE = 10;
+    const FIXED_MASS = 20;
+    const STARS_COUNT = 200;
+    const STAR_SPEED = 0.2;
+    
+    const gravitySlider = document.getElementById('gravitySlider');
+    const gravityValue = document.getElementById('gravityValue');
+    let G = parseFloat(gravitySlider.value);
+
+    gravitySlider.addEventListener('input', () => {
+      G = parseFloat(gravitySlider.value);
+      gravityValue.textContent = G.toFixed(1);
+    });
+
+    let isCollision = false;
+    let mass1, mass2;
+    let stars = Array.from({ length: STARS_COUNT }, () => ({
+      x: Math.random() * canvas.width * 0.8 + canvas.width * 0.1,
+      y: Math.random() * canvas.height * 0.8 + canvas.height * 0.1,
+      brightness: Math.floor(Math.random() * 155) + 100
+    }));
+    let trails = [];
+
+    function drawBackground() {
+      ctx.fillStyle = 'black';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      stars.forEach(star => {
+        ctx.fillStyle = `rgb(${star.brightness}, ${star.brightness}, ${star.brightness})`;
+        ctx.beginPath();
+        ctx.arc(star.x, star.y, 1, 0, Math.PI * 2);
+        ctx.fill();
+        star.x += STAR_SPEED;
+        if (star.x > canvas.width) star.x = 0;
+      });
+    }
+
+    class Mass {
+      constructor(x, y, vx, vy, color) {
+        this.x = x;
+        this.y = y;
+        this.vx = vx;
+        this.vy = vy;
+        this.mass = FIXED_MASS;
+        this.color = color;
+        this.radius = Math.sqrt(this.mass) * 2;
+        this.trail = [];
+      }
+
+      draw() {
+        if (this.trail.length > 1) {
+          ctx.beginPath();
+          ctx.strokeStyle = this.color;
+          ctx.globalAlpha = 0.5;
+          ctx.lineWidth = 2;
+          for (let i = 1; i < this.trail.length; i++) {
+            ctx.moveTo(this.trail[i - 1].x, this.trail[i - 1].y);
+            ctx.lineTo(this.trail[i].x, this.trail[i].y);
+          }
+          ctx.stroke();
+        }
+
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        ctx.fill();
+        ctx.closePath();
+      }
+
+      update(otherMass) {
+        const dx = otherMass.x - this.x;
+        const dy = otherMass.y - this.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        if (distance < COLLISION_DISTANCE) return true;
+
+        const force = (G * this.mass * otherMass.mass) / (distance * distance);
+        const angle = Math.atan2(dy, dx);
+
+        this.vx += (force * Math.cos(angle)) / this.mass;
+        this.vy += (force * Math.sin(angle)) / this.mass;
+
+        this.x += this.vx;
+        this.y += this.vy;
+
+        this.trail.push({ x: this.x, y: this.y });
+        trails.push({ x: this.x, y: this.y, color: this.color });
+
+        return false;
+      }
+
+      isOutOfCanvas() {
+        return this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height;
+      }
+    }
+
+    function createRandomMass(color) {
+      return new Mass(
+        Math.random() * canvas.width,
+        Math.random() * canvas.height,
+        (Math.random() - 0.5) * 2,
+        (Math.random() - 0.5) * 2,
+        color
+      );
+    }
+
+    function resetSimulation() {
+      mass1 = createRandomMass('gold');
+      mass2 = createRandomMass('lightSkyBlue');
+      isCollision = false;
+    }
+
+    resetSimulation();
+    
+    function animate() {
+      if (!isCollision) {
+        if (mass1.isOutOfCanvas() && mass2.isOutOfCanvas()) {
+          resetSimulation();
+        }
+
+        drawBackground();
+        trails.forEach(point => {
+          ctx.fillStyle = point.color;
+          ctx.beginPath();
+          ctx.arc(point.x, point.y, 1, 0, Math.PI * 2);
+          ctx.fill();
+        });
+
+        const collision1 = mass1.update(mass2);
+        const collision2 = mass2.update(mass1);
+
+        if (collision1 || collision2) {
+          isCollision = true;
+          console.log('Collision detected!');
+        }
+
+        mass1.draw();
+        mass2.draw();
+      }
+
+      requestAnimationFrame(animate);
+    }
+
+    animate();
+  </script>
+</body>
+</html>
