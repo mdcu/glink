@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parametric Heart Shape Plot</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; margin: 0; padding: 10px; }
+        canvas { width: 400px; height: 400px; display: block; margin: 10px auto; }
+        .controls { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        .slider-container { display: flex; flex-direction: column; width: 90%; max-width: 300px; text-align: left; }
+        label { font-weight: bold; margin-bottom: 5px; }
+    </style>
+</head>
+<body>
+    <h2>Parametric Heart Shape Plot</h2>
+
+    <div class="controls">
+        <div class="slider-container">
+            <label for="parametricWidth">Width (W): <span id="parametricWidthValue">16</span></label>
+            <input type="range" id="parametricWidth" min="10" max="30" step="1" value="16">
+        </div>
+
+        <div class="slider-container">
+            <label for="parametricHeight">Height (H): <span id="parametricHeightValue">13</span></label>
+            <input type="range" id="parametricHeight" min="10" max="30" step="1" value="13">
+        </div>
+
+        <div class="slider-container">
+            <label for="curveDepth">Curve Depth (D): <span id="curveDepthValue">5</span></label>
+            <input type="range" id="curveDepth" min="3" max="15" step="0.1" value="5">
+        </div>
+
+        <div class="slider-container">
+            <label for="pointSharpness">Point Sharpness (S): <span id="pointSharpnessValue">1</span></label>
+            <input type="range" id="pointSharpness" min="0.5" max="3" step="0.1" value="1">
+        </div>
+
+        <div class="slider-container">
+            <label for="density">Point Density: <span id="densityValue">100</span></label>
+            <input type="range" id="density" min="10" max="150" value="90">
+        </div>
+    </div>
+
+    <canvas id="heartChart"></canvas>
+
+    <script>
+        const ctx = document.getElementById('heartChart').getContext('2d');
+        let chart;
+
+        function generateData(density, params) {
+            let data = [];
+            const step = 2 * Math.PI / density;
+
+            let W = params.width;
+            let H = params.height;
+            let D = params.curveDepth;
+            let S = params.pointSharpness;
+
+            for (let t = 0; t <= 2 * Math.PI; t += step) {
+                let x = (W * Math.pow(Math.sin(t), 3)) / 20;
+                let y = (H * Math.cos(t) - (D * Math.cos(2 * t)) - (2 * Math.cos(3 * t)) - (S * Math.cos(4 * t))) / 20;
+                data.push({ x, y });
+            }
+
+            return data;
+        }
+
+        function plotHeart() {
+            console.log({
+                width: document.getElementById("parametricWidth").value,
+                height: document.getElementById("parametricHeight").value,
+                curveDepth: document.getElementById("curveDepth").value,
+                pointSharpness: document.getElementById("pointSharpness").value,
+                density: document.getElementById("density").value
+            });
+            let density = parseInt(document.getElementById("density").value);
+            let params = {
+                width: parseInt(document.getElementById("parametricWidth").value),
+                height: parseInt(document.getElementById("parametricHeight").value),
+                curveDepth: parseFloat(document.getElementById("curveDepth").value),
+                pointSharpness: parseFloat(document.getElementById("pointSharpness").value)
+            };
+
+            document.getElementById("densityValue").textContent = density;
+            document.getElementById("parametricWidthValue").textContent = params.width;
+            document.getElementById("parametricHeightValue").textContent = params.height;
+            document.getElementById("curveDepthValue").textContent = params.curveDepth;
+            document.getElementById("pointSharpnessValue").textContent = params.pointSharpness;
+
+            let data = generateData(density, params);
+
+            if (chart) chart.destroy();
+
+            chart = new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'Heart Shape',
+                        data: data,
+                        borderColor: 'red',
+                        backgroundColor: 'pink',
+                        pointRadius: 1
+                    }]
+                },
+                options: {
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    responsive: false,  
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { 
+                            type: 'linear',
+                            min: -2, 
+                            max: 2,
+                            grid: { drawTicks: false },
+                            ticks: { display: false, autoSkip: false }
+                        },
+                        y: { 
+                            type: 'linear',
+                            min: -2, 
+                            max: 2,
+                            grid: { drawTicks: false },
+                            ticks: { display: false, autoSkip: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        document.getElementById("density").addEventListener("input", plotHeart);
+        document.getElementById("parametricWidth").addEventListener("input", plotHeart);
+        document.getElementById("parametricHeight").addEventListener("input", plotHeart);
+        document.getElementById("curveDepth").addEventListener("input", plotHeart);
+        document.getElementById("pointSharpness").addEventListener("input", plotHeart);
+
+        plotHeart(); // Initial plot
+    </script>
+</body>
+</html>
